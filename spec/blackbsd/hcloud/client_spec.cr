@@ -32,7 +32,6 @@ describe BlackBSD::Hetzner::Client do
       server.name.should eq "test-server"
       server.status.should eq "running"
       server.ipv4.should eq "1.2.3.4"
-      server.rescue_enabled?.should be_false
     end
   end
 
@@ -86,7 +85,6 @@ describe BlackBSD::Hetzner::Client do
       servers.size.should eq 2
       servers[0].id.should eq 1
       servers[1].id.should eq 2
-      servers[1].rescue_enabled?.should be_true
     end
   end
 

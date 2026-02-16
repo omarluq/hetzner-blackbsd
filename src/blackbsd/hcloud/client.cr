@@ -1,60 +1,11 @@
 require "crest"
-require "json"
+require "./exceptions"
+require "./server"
+require "./action"
+require "./responses"
 
 module BlackBSD
   module Hetzner
-    class APIError < Exception; end
-
-    class RateLimitError < APIError; end
-
-    class NotFoundError < APIError; end
-
-    struct Server
-      include JSON::Serializable
-
-      getter id : Int64
-      getter name : String = ""
-      getter status : String = ""
-      @[JSON::Field(key: "rescue_enabled")]
-      getter? rescue_enabled : Bool = false
-
-      @[JSON::Field(key: "public_net")]
-      getter public_net : PublicNet = PublicNet.new
-
-      def ipv4 : String
-        public_net.ipv4.ip
-      end
-    end
-
-    struct PublicNet
-      include JSON::Serializable
-
-      getter ipv4 : IPv4 = IPv4.new
-
-      def initialize
-        @ipv4 = IPv4.new
-      end
-    end
-
-    struct IPv4
-      include JSON::Serializable
-
-      getter ip : String = ""
-
-      def initialize
-        @ip = ""
-      end
-    end
-
-    struct ActionInfo
-      include JSON::Serializable
-
-      getter id : Int64
-      getter status : String = ""
-      getter command : String = ""
-      getter started : String = ""
-    end
-
     class Client
       BASE_URL = "https://api.hetzner.cloud/v1"
 
@@ -155,22 +106,6 @@ module BlackBSD
         else
           raise APIError.new("HTTP #{ex.http_code}: #{ex.message}")
         end
-      end
-
-      # JSON response wrappers
-      private struct ServerResponse
-        include JSON::Serializable
-        getter server : Server
-      end
-
-      private struct ServersResponse
-        include JSON::Serializable
-        getter servers : Array(Server)
-      end
-
-      private struct ActionResponse
-        include JSON::Serializable
-        getter action : ActionInfo
       end
     end
   end

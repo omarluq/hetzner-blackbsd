@@ -1,12 +1,37 @@
-# Lefthook configuration for hetzner-blackbsd
-# https://github.com/evilmartians/lefthook
+# Lefthook Configuration for blackbsd
+
 pre-commit:
   parallel: true
   commands:
-    format:
-      glob: "*.cr"
-      run: make format-check
-      stage_fixed: false
-    ameba:
-      glob: "*.cr"
-      run: make ameba
+    golangci-lint:
+      glob: "*.go"
+      run: golangci-lint run --fix
+      stage_fixed: true
+
+    go-test:
+      run: go test -short ./...
+
+  skip:
+    - merge
+    - rebase
+
+pre-push:
+  commands:
+    go-test:
+      run: go test -v -race ./...
+
+    go-build:
+      run: go build ./...
+
+commit-msg:
+  commands:
+    conventional-commit:
+      run: |
+        MSG=$(cat {1})
+        if ! echo "$MSG" | grep -qE "^(feat|fix|docs|style|refactor|perf|test|chore|ci|build)(\(.+\))?: .{1,}$"; then
+          echo "ERROR: Commit message must follow Conventional Commits format:"
+          echo "  type(scope?): subject"
+          echo ""
+          echo "Valid types: feat, fix, docs, style, refactor, perf, test, chore, ci, build"
+          exit 1
+        fi

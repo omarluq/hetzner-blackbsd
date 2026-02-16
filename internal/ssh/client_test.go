@@ -159,3 +159,22 @@ func TestExpandPath(t *testing.T) {
 		assert.Equal(t, "relative/path/key", result)
 	})
 }
+
+// createTempKey generates a temporary Ed25519 SSH private key for testing.
+func createTempKey(tb testing.TB) string {
+	tb.Helper()
+
+	// PEM-encoded Ed25519 test key (not used for real authentication).
+	const testKey = `-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+QyNTUxOQAAACCnU8bPfe3H5YKnVITKNdr+AOsiuF86MhE1EQAXpPNQ8QAAAJABHde4AR3X
+uAAAAAtzc2gtZWQyNTUxOQAAACCnU8bPfe3H5YKnVITKNdr+AOsiuF86MhE1EQAXpPNQ8Q
+AAAEAbGOvY2Nt3h4PRbzz+D3T/5s1UTIjDVbBmy5pPSxffxadTxs997cflgqdUhMo12v4A
+6yK4XzoyETURABek81DxAAAADXRlc3RAYmxhY2tic2Q=
+-----END OPENSSH PRIVATE KEY-----`
+
+	keyFile := tb.TempDir() + "/test_key"
+	require.NoError(tb, os.WriteFile(keyFile, []byte(testKey), 0o600))
+
+	return keyFile
+}

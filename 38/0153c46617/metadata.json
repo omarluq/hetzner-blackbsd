@@ -3,12 +3,13 @@
   "checkpoint_id": "380153c46617",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 3,
+  "checkpoints_count": 5,
   "files_touched": [
     ".claude/settings.json",
     ".claude/settings.local.json",
     "PROJECT_INDEX.md",
     "SPEC.md",
+    "extract.test",
     "internal/customize/branding.go",
     "internal/customize/customizer.go",
     "internal/customize/customizer_test.go",
@@ -19,6 +20,7 @@
     "internal/extract/iso.go",
     "internal/extract/raw.go",
     "internal/extract/verify.go",
+    "internal/hcloud/client_test.go",
     "internal/hcloud/helpers_test.go",
     "internal/hcloud/power.go",
     "internal/hcloud/power_test.go",
@@ -39,7 +41,8 @@
     "internal/ssh/pty_test.go",
     "internal/ssh/sftp.go",
     "internal/ssh/sftp_test.go",
-    "llms.txt"
+    "llms.txt",
+    "ssh.test"
   ],
   "sessions": [
     {
@@ -48,13 +51,20 @@
       "context": "/38/0153c46617/0/context.md",
       "content_hash": "/38/0153c46617/0/content_hash.txt",
       "prompt": "/38/0153c46617/0/prompt.txt"
+    },
+    {
+      "metadata": "/38/0153c46617/1/metadata.json",
+      "transcript": "/38/0153c46617/1/full.jsonl",
+      "context": "/38/0153c46617/1/context.md",
+      "content_hash": "/38/0153c46617/1/content_hash.txt",
+      "prompt": "/38/0153c46617/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 939214,
-    "cache_creation_tokens": 128325,
-    "cache_read_tokens": 4266208,
-    "output_tokens": 22411,
-    "api_call_count": 56
+    "input_tokens": 2701752,
+    "cache_creation_tokens": 238379,
+    "cache_read_tokens": 8396366,
+    "output_tokens": 38759,
+    "api_call_count": 114
   }
 }

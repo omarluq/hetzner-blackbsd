@@ -1,0 +1,132 @@
+<teammate-message teammate_id="team-lead">
+You are working on the hetzner-blackbsd Go project at /home/omar/sandbox/blackBSD/bsd-hcloud.
+
+## CRITICAL RULES
+- DO NOT modify .golangci.yml
+- DO NOT add //nolint comments or any magic comments
+- Write clean, idiomatic, DRY Go code
+- No dead code, no smells
+- Use external test packages (package foo_test)
+- ALL linters enabled (exhaustruct, varnamelen, dupl, paralleltest, errcheck, etc.)
+- Run `task ci` after ALL changes to verify
+- The golangci-lint config has ALL linters enabled including exhaustruct (all struct fields must be set), varnamelen (short var names banned), dupl (no duplicate code), paralleltest (t.Parallel() required)
+
+## CONTEXT
+
+This project builds BlackBSD on Hetzner Cloud. After customizing NetBSD, we re-enter rescue mode and extract the disk as a compressed image using dd + xz. We also optionally create an ISO.
+
+The SSH client interface:
+```go
+// From internal/ssh
+type Client struct { ... }
+func (c *Client) Exec(ctx context.Context, command string) (CommandResult, error) { ... }
+
+type CommandResult struct {
+    Stdout   string
+    Stderr   string  
+    ExitCode int
+}
+func (r CommandResult) Success() bool { return r.ExitCode == 0 }
+```
+
+## YOUR TASK: Create internal/extract package
+
+### Files to Create
+
+1. `internal/extract/extractor.go` - Main extractor logic
+2. `internal/extract/extractor_test.go` - Tests
+
+### Interface Design
+
+```go
+// Runner executes commands on a remote host.
+type Runner interface {
+    Exec(ctx context.Context, command string) (ssh.CommandResult, error)
+}
+```
+
+### Extractor struct
+
+```go
+type Extractor struct {
+    runner Runner
+    device string // e.g., "/dev/sda"
+}
+
+func New(runner Runner, device string) *Extractor { ... }
+```
+
+### Methods
+
+1. `ExtractRawImage(ctx context.Context, outputPath string) error`
+   - Run: `dd if=/dev/sda bs=4M status=progress | xz -T0 -9 > <outputPath>`
+   - Check result.Success()
+   - Return error with context on failure
+
+2. `ExtractISO(ctx context.Context, mountPoint, outputPath string) error`
+   - Mount the device: `mount -r /dev/sda1 <mountPoint>`
+   - Run xorriso: `xorriso -as mkisofs -o <outputPath> -b boot/cdboot -no-emul-boot <mountPoint>`
+   - Unmount: `umount <mountPoint>`
+   - Return error with context on failure
+
+3. `ImageSize(ctx context.Context, imagePath string) (int64, error)`
+   - Run: `stat -c %s <imagePath>` (or `wc -c < <imagePath>`)
+   - Parse output as int64
+   - Return size
+
+4. `Checksum(ctx context.Context, imagePath string) (string, error)`
+   - Run: `sha256sum <imagePath>`
+   - Parse first field as checksum
+   - Return checksum string
+
+### Tests
+
+Use a mock Runner:
+
+```go
+type mockRunner struct {
+    commands []string
+    results  map[string]ssh.CommandResult
+    err      error
+}
+```
+
+Test cases:
+- ExtractRawImage generates correct dd+xz command
+- ExtractISO generates correct mount/mkisofs/umount sequence
+- ImageSize parses stat output correctly
+- Checksum parses sha256sum output correctly
+- Error cases for failed commands
+
+Remember: t.Parallel() everywhere, subtests, testify assertions.
+
+After implementation, run `task ci` and fix ALL issues. Iterate until clean.
+
+IMPORTANT: Import the ssh package as `sshpkg "github.com/omarluq/hetzner-blackbsd/internal/ssh"` if needed to avoid name collision.
+</teammate-message>
+
+---
+
+<teammate-message teammate_id="team-lead" summary="Modular structure and CI verification guidelines">
+IMPORTANT GUIDELINES FROM TEAM LEAD:
+
+1. MODULAR FILE STRUCTURE: Do NOT make huge files. Break code into separate files by concern. E.g., for hcloud: put power actions in a separate file (power.go), SSH key ops in sshkeys.go, wait helpers in wait.go. For SSH: put SFTP in sftp.go, PTY in pty.go.
+
+2. REUSABLE MODULES: Design code so it can be reused. Use interfaces, not concrete types.
+
+3. UTILS: Extract shared utilities when it makes sense (e.g., a common Runner interface could be in a shared package).
+
+4. MUST RUN `task ci`: After ALL changes, run `task ci` to verify. Do not report done until it passes.
+
+5. CLEAN IDIOMATIC GO: Follow Go conventions. Short functions, clear names, proper error wrapping.
+</teammate-message>
+
+<teammate-message teammate_id="team-lead" summary="Fix lint issues in extract module tests">
+Your extract module has lint issues. Run `task ci` and fix these:
+
+1. **exhaustruct**: All struct fields must be set when initializing mockRunner. Include ALL fields (err, results, lastCommand, commands) even when empty.
+2. **funlen**: TestExtractISO (144 lines), TestImageSize (87 lines), TestChecksum (89 lines) exceed 80 lines. Break into smaller test functions or move subtests out.
+3. **revive/unused-parameter**: In mock's Exec method, rename `ctx` to `_` if unused.
+
+Fix these and re-run `task ci` until 0 issues.
+</teammate-message>

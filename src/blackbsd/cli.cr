@@ -1,29 +1,31 @@
-module BlackBSD
-  module CLI
-    def self.run(args = ARGV)
-      if args.includes?("--version") || args.includes?("-v")
-        puts "hetzner-blackbsd #{VERSION}"
-        return
-      end
+require "admiral"
 
-      if args.includes?("--help") || args.includes?("-h") || args.empty?
-        puts help_text
-        return
+module BlackBSD
+  class CLI < Admiral::Command
+    define_help description: "BlackBSD ISO build pipeline on Hetzner Cloud"
+    define_version BlackBSD::VERSION
+
+    class StatusCmd < Admiral::Command
+      define_help description: "Show BlackBSD build servers"
+
+      define_flag config : String,
+        description: "Path to config file",
+        default: "blackbsd.yml",
+        short: c
+
+      def run
+        config = BlackBSD::Config.from_file(flags.config)
+        Commands::Status.new(config).run
+      rescue ex : ConfigError
+        STDERR.puts "Error: #{ex.message}"
+        exit 1
       end
     end
 
-    private def self.help_text
-      <<-HELP
-      hetzner-blackbsd v#{VERSION} - BlackBSD ISO build pipeline on Hetzner Cloud
+    register_sub_command status, StatusCmd, description: "Show BlackBSD build servers"
 
-      Usage:
-        hetzner-blackbsd [command] [options]
-
-      Options:
-        -h, --help     Show this help
-        -v, --version  Show version
-
-      HELP
+    def run
+      puts help
     end
   end
 end

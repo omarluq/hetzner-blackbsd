@@ -1,15 +1,17 @@
 # hetzner-blackbsd
 
-Build BlackBSD ISOs on Hetzner Cloud. One command, one binary.
+Build BlackBSD images on Hetzner Cloud. One command, one binary.
 
-BlackBSD is a NetBSD-based LiveCD with security tools and Fluxbox. This tool automates the entire build: provision an ephemeral cloud server, install NetBSD inside QEMU, layer security tools via pkgsrc, produce a bootable ISO and disk image, download artifacts, destroy the server.
+BlackBSD is a NetBSD-based LiveCD with security tools and Fluxbox. This tool automates the entire build: provision an ephemeral cloud server, use Hetzner's rescue mode to install NetBSD directly to disk, customize at native hardware speed via pkgsrc, extract the finished image, and destroy the server.
 
-Inspired by [vitobotta/hetzner-k3s](https://github.com/vitobotta/hetzner-k3s) — same pattern: Crystal + Hetzner API + SSH.
+Inspired by [vitobotta/hetzner-k3s](https://github.com/vitobotta/hetzner-k3s) — same pattern: Crystal + Hetzner API + SSH. Build approach based on [HOWTO: Run NetBSD on Hetzner Cloud](https://www.unitedbsd.com/d/1262-howto-run-netbsd-on-hetzner-cloud) from the UnitedBSD community.
 
 ## Requirements
 
 - [Crystal](https://crystal-lang.org/) >= 1.18.2
-- [libssh2](https://www.libssh2.org/) (for SSH connectivity)
+- [libssh2](https://www.libssh2.org/) (SSH library)
+  - Ubuntu/Debian: `sudo apt install libssh2-1-dev`
+  - macOS: `brew install libssh2`
 - A [Hetzner Cloud](https://www.hetzner.com/cloud) API token
 - An SSH key pair
 
@@ -18,8 +20,7 @@ Inspired by [vitobotta/hetzner-k3s](https://github.com/vitobotta/hetzner-k3s) �
 ```sh
 git clone https://github.com/omarluq/hetzner-blackbsd.git
 cd hetzner-blackbsd
-shards install
-shards build hetzner-blackbsd --release
+make release
 ```
 
 The binary is at `bin/hetzner-blackbsd`.
@@ -27,7 +28,7 @@ The binary is at `bin/hetzner-blackbsd`.
 ## Usage
 
 ```
-hetzner-blackbsd build   [--config path]  Build BlackBSD ISO
+hetzner-blackbsd build   [--config path]  Build BlackBSD image
 hetzner-blackbsd destroy [--config path]  Destroy lingering build servers
 hetzner-blackbsd status  [--config path]  Show build server status
 hetzner-blackbsd version                  Print version
@@ -73,44 +74,44 @@ hetzner-blackbsd build --config blackbsd.yml
 ```
 
 3. Artifacts land in `./output/`:
+   - `blackbsd.raw.xz` — compressed disk image for cloud deployment (`xz -d | dd of=/dev/sda`)
    - `blackbsd.iso` — bootable LiveCD
-   - `blackbsd.raw.xz` — compressed disk image for cloud deployment
 
 ## How It Works
 
 ```mermaid
 flowchart TD
     A[Parse Config] --> B[Provision Hetzner Server]
-    B --> C[Install QEMU and deps]
-    C --> D[Download NetBSD ISO]
-    D --> E[Build Base System in QEMU]
-    E --> F[Customize]
-    F --> G[Generate Artifacts]
-    G --> H[Download ISO and disk image]
-    H --> I{Success?}
-    I -->|yes| J[Destroy Server]
-    I -->|no| J
+    B --> C[Enable Rescue Mode]
+    C --> D[Install NetBSD via QEMU+KVM]
+    D --> E[Reboot into Native NetBSD]
+    E --> F[Customize at HW Speed]
+    F --> G[Re-enter Rescue Mode]
+    G --> H[dd + xz disk image]
+    H --> I[Download Image]
+    I --> J[Destroy Server]
 
-    subgraph step4 [Base System]
-        E1[Boot NetBSD ISO in QEMU]
-        E2[Automated install via serial]
-        E1 --> E2
+    subgraph rescue1 [Rescue Mode - Install]
+        D1[Download NetBSD ISO]
+        D2[QEMU writes to /dev/sda]
+        D1 --> D2
     end
-    E -.-> step4
+    D -.-> rescue1
 
-    subgraph step5 [Customization]
+    subgraph native [Native NetBSD]
         F1[pkgsrc security tools]
         F2[Fluxbox and theme]
         F3[Branding and networking]
     end
-    F -.-> step5
+    F -.-> native
 
-    subgraph step6 [Artifact Generation]
-        G1[xorriso: blackbsd.iso]
-        G2[xz: blackbsd.raw.xz]
+    subgraph rescue2 [Rescue Mode - Extract]
+        H1["dd if=/dev/sda | xz > blackbsd.raw.xz"]
     end
-    G -.-> step6
+    H -.-> rescue2
 ```
+
+**Key insight:** Rescue mode gives us root access to `/dev/sda` and includes QEMU+KVM. We install NetBSD via QEMU in rescue (writing directly to disk), then reboot into native NetBSD for customization. pkgsrc builds run at full hardware speed — not inside emulation.
 
 The build server is **always destroyed** when done, even on failure. All servers are labeled `managed-by=blackbsd-builder` for easy identification. Run `hetzner-blackbsd destroy` to clean up any orphaned servers.
 
@@ -125,7 +126,7 @@ make ameba              # lint
 
 ## Cost
 
-A build on cpx31 (4 vCPU, 8 GB RAM) takes ~15–30 minutes. At Hetzner hourly pricing, each build costs roughly **0.01–0.03 EUR**.
+A build on cpx31 (4 vCPU, 8 GB RAM) takes ~20–40 minutes. At Hetzner hourly pricing, each build costs roughly **0.01–0.03 EUR**.
 
 ## License
 

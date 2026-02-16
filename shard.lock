@@ -20,29 +20,9 @@ shards:
     git: https://github.com/kostya/cron_parser.git
     version: 0.4.0
 
-  croupier:
-    git: https://github.com/ralsina/croupier.git
-    version: 0.9.0+git.commit.9c9c7ba507d81c27211d16aaa4f03dc02584b4a3
-
-  crystalline:
-    git: https://github.com/jtomschroeder/crystalline.git
-    version: 0.1.0+git.commit.e614f1c8b0a321fa74237db3c45bbb36aa3898e2
-
-  docopt:
-    git: https://github.com/ralsina/docopt.cr.git
-    version: 0.3.1
-
-  dotenv:
-    git: https://github.com/gdotdesign/cr-dotenv.git
-    version: 1.0.0
-
   future:
     git: https://github.com/crystal-community/future.cr.git
     version: 1.0.0
-
-  hace:
-    git: https://github.com/ralsina/hace.git
-    version: 0.8.0
 
   http-client-digest_auth:
     git: https://github.com/mamantoha/http-client-digest_auth.git
@@ -52,23 +32,23 @@ shards:
     git: https://github.com/mamantoha/http_proxy.git
     version: 0.14.0
 
-  inotify:
-    git: https://github.com/petoem/inotify.cr.git
-    version: 1.2.0
-
   ipaddress:
     git: https://github.com/sija/ipaddress.cr.git
     version: 0.2.3
-
-  kiwi:
-    git: https://github.com/ralsina/kiwi.git
-    version: 0.1.0+git.commit.65059b87771238593a28b2b8b9fdf77d8e2b9e89
 
   retriable:
     git: https://github.com/sija/retriable.cr.git
     version: 0.2.5
 
+  ssh2:
+    git: https://github.com/spider-gazelle/ssh2.cr.git
+    version: 1.7.2
+
   tasker:
     git: https://github.com/spider-gazelle/tasker.git
     version: 2.1.4
+
+  webmock:
+    git: https://github.com/manastech/webmock.cr.git
+    version: 0.14.0
 

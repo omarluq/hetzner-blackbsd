@@ -155,7 +155,7 @@ describe BlackBSD::Config do
           config.security_tools.should eq [] of String
           config.output_dir.should eq "./output"
           config.build_disk_image?.should be_true
-          config.build_iso.should be_true
+          config.build_iso?.should be_true
         end
       end
     end

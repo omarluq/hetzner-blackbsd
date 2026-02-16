@@ -27,26 +27,18 @@ module BlackBSD
     property branding : Branding
 
     property output_dir : String = "./output"
-    property build_disk_image : Bool = true
-    property build_iso : Bool = true
-    property upload_to_github : Bool = false
-    property deploy_test_vm : Bool = false
 
-    def build_disk_image?
-      @build_disk_image
-    end
+    @[YAML::Field(key: "build_disk_image")]
+    property? build_disk_image : Bool = true
 
-    def build_iso?
-      @build_iso
-    end
+    @[YAML::Field(key: "build_iso")]
+    property? build_iso : Bool = true
 
-    def upload_to_github?
-      @upload_to_github
-    end
+    @[YAML::Field(key: "upload_to_github")]
+    property? upload_to_github : Bool = false
 
-    def deploy_test_vm?
-      @deploy_test_vm
-    end
+    @[YAML::Field(key: "deploy_test_vm")]
+    property? deploy_test_vm : Bool = false
 
     def self.from_file(path : String) : self
       unless File.exists?(path)

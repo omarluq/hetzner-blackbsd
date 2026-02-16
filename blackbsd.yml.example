@@ -1,0 +1,31 @@
+hcloud_token: your_token_here  # or set HCLOUD_TOKEN env var
+ssh_key_path: ~/.ssh/id_ed25519
+location: fsn1
+server_type: cpx31
+
+netbsd_version: "10.1"
+netbsd_arch: "amd64"
+
+security_tools:
+  - nmap
+  - wireshark
+  - metasploit
+  - aircrack-ng
+  - snort
+  - hydra
+  - john
+  - tcpdump
+  - netcat
+  - socat
+
+branding:
+  hostname: blackbsd
+  motd: "Welcome to BlackBSD"
+  default_user: hacker
+
+output_dir: ./output
+build_disk_image: true
+build_iso: true
+
+upload_to_github: false
+deploy_test_vm: false

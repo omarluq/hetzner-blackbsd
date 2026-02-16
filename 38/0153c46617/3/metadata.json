@@ -1,0 +1,50 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "380153c46617",
+  "session_id": "6f42db94-1a69-41b2-a144-2a56ba289fef",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-16T12:22:16.948010551Z",
+  "branch": "main",
+  "checkpoints_count": 2,
+  "files_touched": [
+    ".claude/settings.json",
+    ".claude/settings.local.json",
+    "PROJECT_INDEX.md",
+    "SPEC.md",
+    "extract.test",
+    "internal/customize/branding.go",
+    "internal/customize/customizer.go",
+    "internal/customize/customizer_test.go",
+    "internal/customize/networking.go",
+    "internal/customize/packages.go",
+    "internal/extract/extractor.go",
+    "internal/extract/extractor_test.go",
+    "internal/extract/iso.go",
+    "internal/extract/raw.go",
+    "internal/extract/verify.go",
+    "internal/runner/runner.go",
+    "internal/ssh/pty.go",
+    "internal/ssh/pty_test.go",
+    "internal/ssh/sftp.go",
+    "internal/ssh/sftp_test.go",
+    "llms.txt",
+    "ssh.test"
+  ],
+  "agent": "Claude Code",
+  "token_usage": {
+    "input_tokens": 1155399,
+    "cache_creation_tokens": 245514,
+    "cache_read_tokens": 6018659,
+    "output_tokens": 28637,
+    "api_call_count": 70
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-16T12:22:16.527211071Z",
+    "agent_lines": 13,
+    "human_added": 0,
+    "human_modified": 6,
+    "human_removed": 1990,
+    "total_committed": 19,
+    "agent_percentage": 68.42105263157895
+  }
+}

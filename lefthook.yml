@@ -1,0 +1,12 @@
+# Lefthook configuration for hetzner-blackbsd
+# https://github.com/evilmartians/lefthook
+pre-commit:
+  parallel: true
+  commands:
+    format:
+      glob: "*.cr"
+      run: make format-check
+      stage_fixed: false
+    ameba:
+      glob: "*.cr"
+      run: make ameba

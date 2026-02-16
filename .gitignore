@@ -1,0 +1,24 @@
+/docs/
+/lib/
+/.shards/
+*.dwarf
+
+# Build artifacts
+/bin/
+
+# Profiling output
+/.profile/
+*.data
+*.out
+
+# Coverage output
+/coverage/
+
+# Hace cache
+/.croupier/
+.croupier
+
+.claude/tsc-cache/
+
+.env
+.env.*

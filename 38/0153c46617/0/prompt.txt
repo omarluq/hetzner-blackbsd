@@ -1,0 +1,150 @@
+<teammate-message teammate_id="team-lead">
+You are working on the hetzner-blackbsd Go project at /home/omar/sandbox/blackBSD/bsd-hcloud.
+
+## CRITICAL RULES
+- DO NOT modify .golangci.yml
+- DO NOT add //nolint comments or any magic comments  
+- Write clean, idiomatic, DRY Go code
+- No dead code, no smells
+- Use external test packages (package foo_test)
+- ALL linters enabled (exhaustruct, varnamelen, dupl, paralleltest, errcheck, etc.)
+- Run `task ci` after ALL changes to verify
+
+## YOUR TASKS
+
+### Task 1: Add SFTP file transfer to SSH client
+
+First, you need to add the `github.com/pkg/sftp` dependency:
+```bash
+cd /home/omar/sandbox/blackBSD/bsd-hcloud && go get github.com/pkg/sftp
+```
+
+Edit `internal/ssh/client.go` to add:
+
+1. `UploadFile(ctx context.Context, localPath, remotePath string) error` - upload file via SFTP
+2. `DownloadFile(ctx context.Context, remotePath, localPath string) error` - download file via SFTP
+
+Implementation approach:
+- Dial SSH connection using existing `c.dial(ctx)`
+- Create SFTP client: `sftp.NewClient(conn)`
+- For upload: open local file, create remote file, io.Copy
+- For download: open remote file, create local file, io.Copy
+- Use the existing `expandPath` for local paths
+- Use existing closeQuietly for cleanup
+- Wrap errors with context using existing `&Error{...}` pattern
+
+### Task 2: Add PTY allocation for interactive commands
+
+Add to `internal/ssh/client.go`:
+
+1. `ExecInteractive(ctx context.Context, command string, input io.Reader) (CommandResult, error)` - run command with PTY and input
+
+Implementation:
+- Dial SSH, create session
+- Request PTY: `session.RequestPty("xterm", 80, 40, ssh.TerminalModes{})` 
+- Set session.Stdin to the input reader
+- Capture stdout/stderr in buffers
+- Run command
+- Return CommandResult
+
+This is for QEMU serial console interaction where we pipe install commands.
+
+### Tests
+
+Add tests in `internal/ssh/client_test.go` following existing test style. Study the existing tests first.
+
+For file transfer tests, you can't easily test actual SFTP. Instead test:
+- Path expansion logic
+- Error wrapping
+- That methods exist and have correct signatures
+
+For PTY, test:
+- Error cases (nil input reader, etc.)
+- That the method signature is correct
+
+If there is an `export_test.go`, read it to understand what's exported for testing.
+
+After implementation, run `task ci` and fix ALL issues. Iterate until clean.
+</teammate-message>
+
+---
+
+<teammate-message teammate_id="team-lead" summary="Modular structure and CI verification guidelines">
+IMPORTANT GUIDELINES FROM TEAM LEAD:
+
+1. MODULAR FILE STRUCTURE: Do NOT make huge files. Break code into separate files by concern. E.g., for hcloud: put power actions in a separate file (power.go), SSH key ops in sshkeys.go, wait helpers in wait.go. For SSH: put SFTP in sftp.go, PTY in pty.go.
+
+2. REUSABLE MODULES: Design code so it can be reused. Use interfaces, not concrete types.
+
+3. UTILS: Extract shared utilities when it makes sense (e.g., a common Runner interface could be in a shared package).
+
+4. MUST RUN `task ci`: After ALL changes, run `task ci` to verify. Do not report done until it passes.
+
+5. CLEAN IDIOMATIC GO: Follow Go conventions. Short functions, clear names, proper error wrapping.
+</teammate-message>
+
+---
+
+<teammate-message teammate_id="team-lead" summary="New task: create NetBSD installer module">
+Great work on SFTP and PTY! Here's your next task:
+
+## Task: Create internal/netbsd package - NetBSD installer module
+
+### Files to Create
+- `internal/netbsd/installer.go` - Main installer struct and methods
+- `internal/netbsd/installer_test.go` - Tests
+
+### Context
+This module automates NetBSD installation via QEMU inside Hetzner rescue mode. It downloads the NetBSD ISO, runs QEMU with it, and automates the install via serial console.
+
+The shared `runner.Runner` interface is at `internal/runner/runner.go`:
+```go
+type Runner interface {
+    Exec(ctx context.Context, command string) (ssh.CommandResult, error)
+}
+```
+
+### Implementation
+
+```go
+// internal/netbsd/installer.go
+package netbsd
+
+type Installer struct {
+    runner  runner.Runner
+    version string // e.g., "10.1"
+    arch    string // e.g., "amd64"
+}
+
+func New(exec runner.Runner, version, arch string) *Installer { ... }
+```
+
+Methods:
+
+1. `DownloadISO(ctx, destDir string) (string, error)` - Download NetBSD ISO
+   - URL: `https://cdn.netbsd.org/pub/NetBSD/NetBSD-{version}/{arch}/installation/cdrom/boot-com.iso`
+   - Run: `wget -O {destDir}/netbsd-{version}-{arch}.iso {url}`
+   - Return path to downloaded ISO
+
+2. `InstallViaQEMU(ctx, isoPath, device string) error` - Run QEMU install
+   - Command: `qemu-system-x86_64 -enable-kvm -m 4G -smp 4 -cdrom {isoPath} -boot d -drive file={device},format=raw -nographic -serial mon:stdio`
+   - Use timeout context (15 min default)
+   - Return error on failure
+
+3. `ISODownloadURL() string` - returns full download URL
+   - Pure function, easy to test
+
+### Tests
+Use mockRunner like the other packages. Test:
+- ISODownloadURL for different version/arch combos
+- DownloadISO generates correct wget command
+- InstallViaQEMU generates correct QEMU command
+- Error handling for failures
+
+### Rules
+- Use `internal/runner` package for Runner interface
+- Import ssh as needed for CommandResult
+- Run `task ci` and fix ALL issues before reporting done
+- NO nolint, NO golangci config changes
+- Clean idiomatic Go, modular files
+</teammate-message>

@@ -1,0 +1,96 @@
+<teammate-message teammate_id="team-lead">
+You are working on the hetzner-blackbsd Go project at /home/omar/sandbox/blackBSD/bsd-hcloud.
+
+## CRITICAL RULES
+- DO NOT modify .golangci.yml
+- DO NOT add //nolint comments or any magic comments
+- Write clean, idiomatic, DRY Go code
+- No dead code, no smells
+- Use external test packages (package foo_test)
+- ALL linters enabled (exhaustruct, varnamelen, dupl, paralleltest, errcheck, etc.)
+- Run `task ci` after ALL changes to verify
+
+## YOUR TASKS
+
+### Task 1: Add Reset/PowerOn/PowerOff to hcloud client
+
+Edit `internal/hcloud/client.go` to add:
+
+1. `ResetServer(ctx context.Context, server *hcloud.Server) error` - performs hardware reset via `c.api.Server.Reset`
+2. `PowerOnServer(ctx context.Context, server *hcloud.Server) error` - powers on via `c.api.Server.Poweron`  
+3. `PowerOffServer(ctx context.Context, server *hcloud.Server) error` - powers off via `c.api.Server.Poweroff`
+
+IMPORTANT: Look at the hcloud-go SDK to understand the exact method signatures. The hcloud-go Server client has these methods:
+- `Reset(ctx, server)` returns `(*hcloud.Action, *hcloud.Response, error)`
+- `Poweron(ctx, server)` returns `(*hcloud.Action, *hcloud.Response, error)`
+- `Poweroff(ctx, server)` returns `(*hcloud.Action, *hcloud.Response, error)`
+
+Each method should:
+- Call the SDK method
+- Log with slog on success
+- Return wrapped error on failure
+
+### Task 2: Add WaitForAction and WaitForServerStatus
+
+Add to `internal/hcloud/client.go`:
+
+1. `WaitForAction(ctx context.Context, action *hcloud.Action) error` - polls action until complete using `c.api.Action.WatchProgress(ctx, action)` channel
+2. `WaitForServerStatus(ctx context.Context, serverID int64, target hcloud.ServerStatus) error` - polls server status with backoff until it matches target
+
+For WaitForAction, use the hcloud-go SDK's `Action.WatchProgress(ctx, action)` which returns `<-chan int`. When it receives 100, the action is done. Or use `Action.WaitForFunc(ctx, func)`.
+
+For WaitForServerStatus, use backoff/v4 with:
+- MaxElapsedTime: 10 minutes
+- Poll GetServer, check status
+
+### Task 3: Add SSH key management
+
+Add to `internal/hcloud/client.go`:
+
+1. `EnsureSSHKey(ctx context.Context, name string, publicKey string) (*hcloud.SSHKey, error)` - find by name, create if missing
+2. `FindSSHKeyByFingerprint(ctx context.Context, fingerprint string) mo.Option[*hcloud.SSHKey]` - find key by fingerprint
+
+Use the hcloud-go SDK:
+- `c.api.SSHKey.GetByName(ctx, name)` returns `(*hcloud.SSHKey, *hcloud.Response, error)`
+- `c.api.SSHKey.Create(ctx, opts)` with `hcloud.SSHKeyCreateOpts{Name, PublicKey}`
+- `c.api.SSHKey.GetByFingerprint(ctx, fp)` returns `(*hcloud.SSHKey, *hcloud.Response, error)`
+
+### Tests
+
+Add tests in `internal/hcloud/client_test.go` following the EXACT same pattern as existing tests. Study the existing tests carefully:
+
+```go
+// Pattern: use httptest.NewServer, route by URL path, write JSON response
+ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "application/json")
+    // route by r.URL.Path and r.Method
+    // write JSON response
+}))
+```
+
+Each test must:
+- Use t.Parallel() 
+- Use subtests with t.Run and t.Parallel()
+- Use testify assert/require
+- Mock HTTP responses properly
+
+IMPORTANT: Read the EXISTING test file first to match style exactly. Make sure to study `internal/hcloud/client_test.go` carefully.
+
+After implementation, run `task ci` and fix ALL issues. Iterate until clean.
+</teammate-message>
+
+---
+
+<teammate-message teammate_id="team-lead" summary="Modular structure and CI verification guidelines">
+IMPORTANT GUIDELINES FROM TEAM LEAD:
+
+1. MODULAR FILE STRUCTURE: Do NOT make huge files. Break code into separate files by concern. E.g., for hcloud: put power actions in a separate file (power.go), SSH key ops in sshkeys.go, wait helpers in wait.go. For SSH: put SFTP in sftp.go, PTY in pty.go.
+
+2. REUSABLE MODULES: Design code so it can be reused. Use interfaces, not concrete types.
+
+3. UTILS: Extract shared utilities when it makes sense (e.g., a common Runner interface could be in a shared package).
+
+4. MUST RUN `task ci`: After ALL changes, run `task ci` to verify. Do not report done until it passes.
+
+5. CLEAN IDIOMATIC GO: Follow Go conventions. Short functions, clear names, proper error wrapping.
+</teammate-message>

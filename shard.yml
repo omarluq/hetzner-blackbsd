@@ -20,20 +20,18 @@ dependencies:
     github: spider-gazelle/tasker
   crinja:
     github: straight-shoota/crinja
+  ssh2:
+    github: spider-gazelle/ssh2.cr
 
 targets:
   hetzner-blackbsd:
     main: src/main.cr
-  hace:
-    main: lib/hace/src/main.cr
   ameba:
     main: lib/ameba/src/cli.cr
 
 development_dependencies:
   ameba:
     github: crystal-ameba/ameba
-  hace:
-    github: ralsina/hace
 
 license: BSD-3-Clause
 crystal: ">= 1.18.2"

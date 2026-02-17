@@ -6,33 +6,55 @@ import (
 	"log/slog"
 
 	"github.com/hetznercloud/hcloud-go/v2/hcloud"
-	"github.com/samber/lo"
 	"github.com/samber/mo"
 )
+
+// RescueOption configures rescue mode enablement.
+type RescueOption func(*hcloud.ServerEnableRescueOpts)
+
+// WithRescueType sets the rescue type (defaults to Linux64).
+func WithRescueType(t hcloud.ServerRescueType) RescueOption {
+	return func(opts *hcloud.ServerEnableRescueOpts) {
+		opts.Type = t
+	}
+}
+
+// WithRescueSSHKeys adds SSH keys to the rescue environment.
+func WithRescueSSHKeys(keys []int64) RescueOption {
+	return func(opts *hcloud.ServerEnableRescueOpts) {
+		sshKeys := make([]*hcloud.SSHKey, len(keys))
+		for i, id := range keys {
+			var k hcloud.SSHKey
+			k.ID = id
+			sshKeys[i] = &k
+		}
+		opts.SSHKeys = sshKeys
+	}
+}
 
 // EnableRescue enables rescue mode on the given server.
 func (c *Client) EnableRescue(
 	ctx context.Context,
 	server *hcloud.Server,
-	sshKeyIDs []int64,
-) (mo.Result[hcloud.ServerEnableRescueResult], error) {
-	sshKeys := lo.Map(sshKeyIDs, func(id int64, _ int) *hcloud.SSHKey {
-		var sshKey hcloud.SSHKey
-		sshKey.ID = id
-		return &sshKey
-	})
+	opts ...RescueOption,
+) mo.Result[hcloud.ServerEnableRescueResult] {
+	rescueOpts := &hcloud.ServerEnableRescueOpts{
+		Type:   hcloud.ServerRescueTypeLinux64,
+		SSHKeys: nil,
+	}
 
-	var rescueOpts hcloud.ServerEnableRescueOpts
-	rescueOpts.Type = hcloud.ServerRescueTypeLinux64
-	rescueOpts.SSHKeys = sshKeys
+	for _, opt := range opts {
+		opt(rescueOpts)
+	}
 
-	result, _, err := c.api.Server.EnableRescue(ctx, server, rescueOpts)
+	result, _, err := c.api.Server.EnableRescue(ctx, server, *rescueOpts)
 	if err != nil {
-		return mo.Err[hcloud.ServerEnableRescueResult](err), err
+		slog.Error("enable rescue failed", "server_id", server.ID, "error", err)
+		return mo.Err[hcloud.ServerEnableRescueResult](err)
 	}
 
 	slog.Info("rescue enabled", "server_id", server.ID, "action_id", result.Action.ID)
-	return mo.Ok(result), nil
+	return mo.Ok(result)
 }
 
 // DisableRescue disables rescue mode on the given server.

@@ -32,13 +32,35 @@ func TestEnableRescue(t *testing.T) {
 		var srv hcloudsdk.Server
 		srv.ID = 42
 
-		result, err := client.EnableRescue(context.Background(), &srv, []int64{123})
+		result := client.EnableRescue(context.Background(), &srv, bsdhcloud.WithRescueSSHKeys([]int64{123}))
 
-		require.NoError(t, err)
 		assert.True(t, result.IsOk())
 		rescueResult, getErr := result.Get()
 		require.NoError(t, getErr)
 		assert.Equal(t, int64(1), rescueResult.Action.ID)
+	})
+
+	t.Run("returns error on failure", func(t *testing.T) {
+		t.Parallel()
+
+		testServer := httptest.NewServer(http.HandlerFunc(
+			func(writer http.ResponseWriter, _ *http.Request) {
+				writer.Header().Set("Content-Type", "application/json")
+				writer.WriteHeader(http.StatusUnprocessableEntity)
+				writeJSON(t, writer, `{"error": {"code": "invalid_input", "message": "server is locked"}}`)
+			}))
+		defer testServer.Close()
+
+		client := bsdhcloud.NewClientWithOpts(hcloudsdk.WithEndpoint(testServer.URL))
+		var srv hcloudsdk.Server
+		srv.ID = 42
+
+		result := client.EnableRescue(context.Background(), &srv)
+
+		assert.True(t, result.IsError())
+		err := result.Error()
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid_input")
 	})
 }
 

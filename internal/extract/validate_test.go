@@ -80,6 +80,7 @@ func TestValidatePathRejectsShellMetacharacters(t *testing.T) {
 		{"parenthesis injection", "/tmp/$(whoami)"},
 		{"redirect less than", "/tmp/foo < /etc/passwd"},
 		{"redirect greater than", "/tmp/foo > /etc/passwd"},
+		{"null byte injection", "/tmp/foo\x00bar"},
 	}
 
 	for _, tt := range tests {

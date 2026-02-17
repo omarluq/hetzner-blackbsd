@@ -25,8 +25,8 @@ func ValidatePath(path string) error {
 		return ErrInvalidPath
 	}
 
-	// Reject shell metacharacters
-	forbidden := []string{";", "|", "&", "$", "`", "\n", "\r", "(", ")", "<", ">"}
+	// Reject shell metacharacters and null bytes
+	forbidden := []string{"\x00", ";", "|", "&", "$", "`", "\n", "\r", "(", ")", "<", ">"}
 	for _, char := range forbidden {
 		if strings.Contains(path, char) {
 			return ErrInvalidPath

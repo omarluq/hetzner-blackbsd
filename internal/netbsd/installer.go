@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/omarluq/hetzner-blackbsd/internal/runner"
+	"github.com/omarluq/hetzner-blackbsd/internal/ssh"
 )
 
 const qemuTimeout = 15 * time.Minute
@@ -41,7 +42,9 @@ func (inst *Installer) ISODownloadURL() string {
 // It returns the remote path of the downloaded file.
 func (inst *Installer) DownloadISO(ctx context.Context, destDir string) (string, error) {
 	isoPath := fmt.Sprintf("%s/netbsd-%s-%s.iso", destDir, inst.version, inst.arch)
-	cmd := fmt.Sprintf("wget -O %s %s", isoPath, inst.ISODownloadURL())
+	cmd := fmt.Sprintf("wget -O %s %s",
+		ssh.EscapeShellArg(isoPath),
+		ssh.EscapeShellArg(inst.ISODownloadURL()))
 
 	result, err := inst.runner.Exec(ctx, cmd)
 	if err != nil {
@@ -60,8 +63,8 @@ func (inst *Installer) InstallViaQEMU(ctx context.Context, isoPath, device strin
 	cmd := fmt.Sprintf(
 		"qemu-system-x86_64 -enable-kvm -m 4G -smp 4 -cdrom %s -boot d "+
 			"-drive file=%s,format=raw -nographic -serial mon:stdio",
-		isoPath,
-		device,
+		ssh.EscapeShellArg(isoPath),
+		ssh.EscapeShellArg(device),
 	)
 
 	timeoutCtx, cancel := context.WithTimeout(ctx, qemuTimeout)

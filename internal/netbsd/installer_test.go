@@ -115,8 +115,8 @@ func TestDownloadISO(t *testing.T) {
 	t.Run("generates correct wget command", func(t *testing.T) {
 		t.Parallel()
 
-		wgetCmd := "wget -O /tmp/netbsd-10.1-amd64.iso " +
-			"https://cdn.netbsd.org/pub/NetBSD/NetBSD-10.1/amd64/installation/cdrom/boot-com.iso"
+		wgetCmd := "wget -O '/tmp/netbsd-10.1-amd64.iso' " +
+			"'https://cdn.netbsd.org/pub/NetBSD/NetBSD-10.1/amd64/installation/cdrom/boot-com.iso'"
 		mock := newMock(map[string]ssh.CommandResult{wgetCmd: okResult()})
 		installer := netbsd.New(mock, "10.1", "amd64")
 
@@ -130,8 +130,8 @@ func TestDownloadISO(t *testing.T) {
 	t.Run("uses different dest directory", func(t *testing.T) {
 		t.Parallel()
 
-		wgetCmd := "wget -O /var/tmp/netbsd-10.0-amd64.iso " +
-			"https://cdn.netbsd.org/pub/NetBSD/NetBSD-10.0/amd64/installation/cdrom/boot-com.iso"
+		wgetCmd := "wget -O '/var/tmp/netbsd-10.0-amd64.iso' " +
+			"'https://cdn.netbsd.org/pub/NetBSD/NetBSD-10.0/amd64/installation/cdrom/boot-com.iso'"
 		mock := newMock(map[string]ssh.CommandResult{wgetCmd: okResult()})
 		installer := netbsd.New(mock, "10.0", "amd64")
 
@@ -144,8 +144,8 @@ func TestDownloadISO(t *testing.T) {
 	t.Run("returns error on wget failure", func(t *testing.T) {
 		t.Parallel()
 
-		wgetCmd := "wget -O /tmp/netbsd-10.1-amd64.iso " +
-			"https://cdn.netbsd.org/pub/NetBSD/NetBSD-10.1/amd64/installation/cdrom/boot-com.iso"
+		wgetCmd := "wget -O '/tmp/netbsd-10.1-amd64.iso' " +
+			"'https://cdn.netbsd.org/pub/NetBSD/NetBSD-10.1/amd64/installation/cdrom/boot-com.iso'"
 		mock := newMock(map[string]ssh.CommandResult{wgetCmd: errResult("404 Not Found")})
 		installer := netbsd.New(mock, "10.1", "amd64")
 
@@ -176,7 +176,7 @@ func TestInstallViaQEMU(t *testing.T) {
 		t.Parallel()
 
 		qemuCmd := "qemu-system-x86_64 -enable-kvm -m 4G -smp 4" +
-			" -cdrom /tmp/iso.iso -boot d -drive file=/dev/sda,format=raw" +
+			" -cdrom '/tmp/iso.iso' -boot d -drive file='/dev/sda',format=raw" +
 			" -nographic -serial mon:stdio"
 		mock := newMock(map[string]ssh.CommandResult{qemuCmd: okResult()})
 		installer := netbsd.New(mock, "10.1", "amd64")
@@ -185,15 +185,15 @@ func TestInstallViaQEMU(t *testing.T) {
 
 		require.NoError(t, err)
 		assert.Contains(t, mock.lastCommand, "-enable-kvm")
-		assert.Contains(t, mock.lastCommand, "-cdrom /tmp/iso.iso")
-		assert.Contains(t, mock.lastCommand, "file=/dev/sda,format=raw")
+		assert.Contains(t, mock.lastCommand, "-cdrom '/tmp/iso.iso'")
+		assert.Contains(t, mock.lastCommand, "file='/dev/sda',format=raw")
 	})
 
 	t.Run("uses different device path", func(t *testing.T) {
 		t.Parallel()
 
 		qemuCmd := "qemu-system-x86_64 -enable-kvm -m 4G -smp 4" +
-			" -cdrom /tmp/iso.iso -boot d -drive file=/dev/nvme0n1,format=raw" +
+			" -cdrom '/tmp/iso.iso' -boot d -drive file='/dev/nvme0n1',format=raw" +
 			" -nographic -serial mon:stdio"
 		mock := newMock(map[string]ssh.CommandResult{qemuCmd: okResult()})
 		installer := netbsd.New(mock, "10.1", "amd64")
@@ -201,14 +201,14 @@ func TestInstallViaQEMU(t *testing.T) {
 		err := installer.InstallViaQEMU(context.Background(), "/tmp/iso.iso", "/dev/nvme0n1")
 
 		require.NoError(t, err)
-		assert.Contains(t, mock.lastCommand, "file=/dev/nvme0n1,format=raw")
+		assert.Contains(t, mock.lastCommand, "file='/dev/nvme0n1',format=raw")
 	})
 
 	t.Run("returns error on qemu failure", func(t *testing.T) {
 		t.Parallel()
 
 		qemuCmd := "qemu-system-x86_64 -enable-kvm -m 4G -smp 4" +
-			" -cdrom /tmp/iso.iso -boot d -drive file=/dev/sda,format=raw" +
+			" -cdrom '/tmp/iso.iso' -boot d -drive file='/dev/sda',format=raw" +
 			" -nographic -serial mon:stdio"
 		mock := newMock(map[string]ssh.CommandResult{qemuCmd: errResult("device busy")})
 		installer := netbsd.New(mock, "10.1", "amd64")

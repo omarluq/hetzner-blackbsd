@@ -4,10 +4,20 @@ import (
 	"context"
 	"fmt"
 	"unicode"
+
+	"github.com/omarluq/hetzner-blackbsd/internal/ssh"
 )
 
 // ExtractISO creates a bootable ISO from a mounted device partition.
 func (e *Extractor) ExtractISO(ctx context.Context, mountPoint, outputPath string) error {
+	if err := ValidatePath(mountPoint); err != nil {
+		return fmt.Errorf("invalid mount point: %w", err)
+	}
+
+	if err := ValidatePath(outputPath); err != nil {
+		return fmt.Errorf("invalid output path: %w", err)
+	}
+
 	partition := partitionPath(e.device, 1)
 
 	if err := e.mountDevice(ctx, partition, mountPoint); err != nil {
@@ -22,7 +32,7 @@ func (e *Extractor) ExtractISO(ctx context.Context, mountPoint, outputPath strin
 }
 
 func (e *Extractor) mountDevice(ctx context.Context, partition, mountPoint string) error {
-	cmd := fmt.Sprintf("mount -r %s %s", partition, mountPoint)
+	cmd := fmt.Sprintf("mount -r %s %s", ssh.EscapeShellArg(partition), ssh.EscapeShellArg(mountPoint))
 
 	result, err := e.runner.Exec(ctx, cmd)
 	if err != nil {
@@ -37,7 +47,8 @@ func (e *Extractor) mountDevice(ctx context.Context, partition, mountPoint strin
 }
 
 func (e *Extractor) createISO(ctx context.Context, mountPoint, outputPath string) error {
-	cmd := fmt.Sprintf("xorriso -as mkisofs -o %s -b boot/cdboot -no-emul-boot %s", outputPath, mountPoint)
+	cmd := fmt.Sprintf("xorriso -as mkisofs -o %s -b boot/cdboot -no-emul-boot %s",
+		ssh.EscapeShellArg(outputPath), ssh.EscapeShellArg(mountPoint))
 
 	result, err := e.runner.Exec(ctx, cmd)
 	if err != nil {
@@ -52,7 +63,7 @@ func (e *Extractor) createISO(ctx context.Context, mountPoint, outputPath string
 }
 
 func (e *Extractor) unmountDevice(ctx context.Context, mountPoint string) error {
-	cmd := fmt.Sprintf("umount %s", mountPoint)
+	cmd := fmt.Sprintf("umount %s", ssh.EscapeShellArg(mountPoint))
 
 	result, err := e.runner.Exec(ctx, cmd)
 	if err != nil {

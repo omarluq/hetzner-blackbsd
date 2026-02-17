@@ -71,14 +71,14 @@ func TestExtractRawImageSuccess(t *testing.T) {
 		t.Parallel()
 
 		runner := newMock(map[string]ssh.CommandResult{
-			"dd if=/dev/sda bs=4M status=progress | xz -T0 -9 > /tmp/image.raw.xz": okResult(),
+			"dd if='/dev/sda' bs=4M status=progress | xz -T0 -9 > '/tmp/image.raw.xz'": okResult(),
 		})
 
 		extractor := extract.New(runner, "/dev/sda")
 		extractErr := extractor.ExtractRawImage(context.Background(), "/tmp/image.raw.xz")
 
 		assert.NoError(t, extractErr)
-		assert.Contains(t, runner.lastCommand, "dd if=/dev/sda")
+		assert.Contains(t, runner.lastCommand, "dd if='/dev/sda'")
 		assert.Contains(t, runner.lastCommand, "xz -T0 -9")
 	})
 
@@ -86,14 +86,14 @@ func TestExtractRawImageSuccess(t *testing.T) {
 		t.Parallel()
 
 		runner := newMock(map[string]ssh.CommandResult{
-			"dd if=/dev/nvme0n1 bs=4M status=progress | xz -T0 -9 > /tmp/out.img.xz": okResult(),
+			"dd if='/dev/nvme0n1' bs=4M status=progress | xz -T0 -9 > '/tmp/out.img.xz'": okResult(),
 		})
 
 		extractor := extract.New(runner, "/dev/nvme0n1")
 		extractErr := extractor.ExtractRawImage(context.Background(), "/tmp/out.img.xz")
 
 		assert.NoError(t, extractErr)
-		assert.Contains(t, runner.lastCommand, "dd if=/dev/nvme0n1")
+		assert.Contains(t, runner.lastCommand, "dd if='/dev/nvme0n1'")
 	})
 }
 
@@ -104,7 +104,7 @@ func TestExtractRawImageErrors(t *testing.T) {
 		t.Parallel()
 
 		runner := newMock(map[string]ssh.CommandResult{
-			"dd if=/dev/sda bs=4M status=progress | xz -T0 -9 > /tmp/image.raw.xz": errResult("device not found"),
+			"dd if='/dev/sda' bs=4M status=progress | xz -T0 -9 > '/tmp/image.raw.xz'": errResult("device not found"),
 		})
 
 		extractErr := extract.New(runner, "/dev/sda").ExtractRawImage(context.Background(), "/tmp/image.raw.xz")
@@ -125,9 +125,9 @@ func TestExtractRawImageErrors(t *testing.T) {
 
 func isoSuccessResults() map[string]ssh.CommandResult {
 	return map[string]ssh.CommandResult{
-		"mount -r /dev/sda1 /mnt/iso": okResult(),
-		"xorriso -as mkisofs -o /tmp/blackbsd.iso -b boot/cdboot -no-emul-boot /mnt/iso": okResult(),
-		"umount /mnt/iso": okResult(),
+		"mount -r '/dev/sda1' '/mnt/iso'":                                                     okResult(),
+		"xorriso -as mkisofs -o '/tmp/blackbsd.iso' -b boot/cdboot -no-emul-boot '/mnt/iso'":  okResult(),
+		"umount '/mnt/iso'": okResult(),
 	}
 }
 
@@ -143,7 +143,7 @@ func TestExtractISOSuccess(t *testing.T) {
 
 		assert.NoError(t, isoErr)
 		assert.Len(t, runner.commands, 3)
-		assert.Contains(t, runner.commands[0], "mount -r /dev/sda1")
+		assert.Contains(t, runner.commands[0], "mount -r '/dev/sda1'")
 		assert.Contains(t, runner.commands[1], "xorriso")
 		assert.Contains(t, runner.commands[2], "umount")
 	})
@@ -152,15 +152,15 @@ func TestExtractISOSuccess(t *testing.T) {
 		t.Parallel()
 
 		runner := newMock(map[string]ssh.CommandResult{
-			"mount -r /dev/nvme0n1p1 /mnt/build":                                         okResult(),
-			"xorriso -as mkisofs -o /output.iso -b boot/cdboot -no-emul-boot /mnt/build": okResult(),
-			"umount /mnt/build": okResult(),
+			"mount -r '/dev/nvme0n1p1' '/mnt/build'":                                         okResult(),
+			"xorriso -as mkisofs -o '/output.iso' -b boot/cdboot -no-emul-boot '/mnt/build'": okResult(),
+			"umount '/mnt/build'": okResult(),
 		})
 
 		isoErr := extract.New(runner, "/dev/nvme0n1").ExtractISO(context.Background(), "/mnt/build", "/output.iso")
 
 		assert.NoError(t, isoErr)
-		assert.Contains(t, runner.commands[0], "mount -r /dev/nvme0n1p1")
+		assert.Contains(t, runner.commands[0], "mount -r '/dev/nvme0n1p1'")
 	})
 }
 
@@ -168,7 +168,7 @@ func TestExtractISOMountError(t *testing.T) {
 	t.Parallel()
 
 	runner := newMock(map[string]ssh.CommandResult{
-		"mount -r /dev/sda1 /mnt/iso": errResult("mount point does not exist"),
+		"mount -r '/dev/sda1' '/mnt/iso'": errResult("mount point does not exist"),
 	})
 
 	isoErr := extract.New(runner, "/dev/sda").ExtractISO(context.Background(), "/mnt/iso", "/tmp/blackbsd.iso")
@@ -180,10 +180,10 @@ func TestExtractISOMountError(t *testing.T) {
 func TestExtractISOXorrisoError(t *testing.T) {
 	t.Parallel()
 
-	xorrisoCmd := "xorriso -as mkisofs -o /tmp/blackbsd.iso -b boot/cdboot -no-emul-boot /mnt/iso"
+	xorrisoCmd := "xorriso -as mkisofs -o '/tmp/blackbsd.iso' -b boot/cdboot -no-emul-boot '/mnt/iso'"
 	runner := newMock(map[string]ssh.CommandResult{
-		"mount -r /dev/sda1 /mnt/iso": okResult(),
-		xorrisoCmd:                     errResult("bootloader not found"),
+		"mount -r '/dev/sda1' '/mnt/iso'": okResult(),
+		xorrisoCmd:                         errResult("bootloader not found"),
 	})
 
 	isoErr := extract.New(runner, "/dev/sda").ExtractISO(context.Background(), "/mnt/iso", "/tmp/blackbsd.iso")
@@ -196,9 +196,9 @@ func TestExtractISOUmountError(t *testing.T) {
 	t.Parallel()
 
 	runner := newMock(map[string]ssh.CommandResult{
-		"mount -r /dev/sda1 /mnt/iso": okResult(),
-		"xorriso -as mkisofs -o /tmp/blackbsd.iso -b boot/cdboot -no-emul-boot /mnt/iso": okResult(),
-		"umount /mnt/iso": errResult("device is busy"),
+		"mount -r '/dev/sda1' '/mnt/iso'":                                                    okResult(),
+		"xorriso -as mkisofs -o '/tmp/blackbsd.iso' -b boot/cdboot -no-emul-boot '/mnt/iso'": okResult(),
+		"umount '/mnt/iso'": errResult("device is busy"),
 	})
 
 	isoErr := extract.New(runner, "/dev/sda").ExtractISO(context.Background(), "/mnt/iso", "/tmp/blackbsd.iso")
@@ -262,7 +262,7 @@ func TestImageSize(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			command := fmt.Sprintf("stat -c %%s %s", testCase.imagePath)
+			command := fmt.Sprintf("stat -c %%s '%s'", testCase.imagePath)
 			runner := newMock(map[string]ssh.CommandResult{
 				command: {Stdout: testCase.stdout, Stderr: "", ExitCode: testCase.exitCode},
 			})
@@ -337,7 +337,7 @@ func TestChecksum(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			command := fmt.Sprintf("sha256sum %s", testCase.imagePath)
+			command := fmt.Sprintf("sha256sum '%s'", testCase.imagePath)
 			stderr := ""
 			if testCase.exitCode != 0 {
 				stderr = "file not found"

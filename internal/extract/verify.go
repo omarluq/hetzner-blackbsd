@@ -5,11 +5,17 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/omarluq/hetzner-blackbsd/internal/ssh"
 )
 
 // ImageSize returns the size of a remote image file in bytes.
 func (e *Extractor) ImageSize(ctx context.Context, imagePath string) (int64, error) {
-	cmd := fmt.Sprintf("stat -c %%s %s", imagePath)
+	if err := ValidatePath(imagePath); err != nil {
+		return 0, fmt.Errorf("invalid image path: %w", err)
+	}
+
+	cmd := fmt.Sprintf("stat -c %%s %s", ssh.EscapeShellArg(imagePath))
 
 	result, err := e.runner.Exec(ctx, cmd)
 	if err != nil {
@@ -32,7 +38,11 @@ func (e *Extractor) ImageSize(ctx context.Context, imagePath string) (int64, err
 
 // Checksum returns the SHA256 checksum of a remote image file.
 func (e *Extractor) Checksum(ctx context.Context, imagePath string) (string, error) {
-	cmd := fmt.Sprintf("sha256sum %s", imagePath)
+	if err := ValidatePath(imagePath); err != nil {
+		return "", fmt.Errorf("invalid image path: %w", err)
+	}
+
+	cmd := fmt.Sprintf("sha256sum %s", ssh.EscapeShellArg(imagePath))
 
 	result, err := e.runner.Exec(ctx, cmd)
 	if err != nil {

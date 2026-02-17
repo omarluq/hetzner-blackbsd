@@ -39,11 +39,7 @@ func (c *Customizer) setHostname(ctx context.Context, hostname string) error {
 }
 
 func (c *Customizer) writeMOTD(ctx context.Context, motd string) error {
-	// Escape for printf - percent signs and backslashes
-	escaped := strings.ReplaceAll(motd, "%", "%%")
-	escaped = strings.ReplaceAll(escaped, "\\", "\\\\")
-
-	command := fmt.Sprintf("printf %%s %s > /etc/motd", ssh.EscapeShellArg(escaped))
+	command := fmt.Sprintf("printf %%s %s > /etc/motd", ssh.EscapeShellArg(motd))
 
 	result, execErr := c.runner.Exec(ctx, command)
 	if execErr != nil {

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/omarluq/hetzner-blackbsd/internal/config"
+	"github.com/omarluq/hetzner-blackbsd/internal/ssh"
 )
 
 // ApplyBranding sets hostname, MOTD, and creates the default user.
@@ -22,7 +23,7 @@ func (c *Customizer) ApplyBranding(ctx context.Context, branding config.Branding
 }
 
 func (c *Customizer) setHostname(ctx context.Context, hostname string) error {
-	command := fmt.Sprintf(`echo "hostname=%s" >> /etc/rc.conf`, hostname)
+	command := fmt.Sprintf("echo hostname=%s >> /etc/rc.conf", ssh.EscapeShellArg(hostname))
 
 	result, execErr := c.runner.Exec(ctx, command)
 	if execErr != nil {
@@ -38,9 +39,11 @@ func (c *Customizer) setHostname(ctx context.Context, hostname string) error {
 }
 
 func (c *Customizer) writeMOTD(ctx context.Context, motd string) error {
-	command := fmt.Sprintf(`cat > /etc/motd << 'MOTDEOF'
-%s
-MOTDEOF`, motd)
+	// Escape for printf - percent signs and backslashes
+	escaped := strings.ReplaceAll(motd, "%", "%%")
+	escaped = strings.ReplaceAll(escaped, "\\", "\\\\")
+
+	command := fmt.Sprintf("printf %%s %s > /etc/motd", ssh.EscapeShellArg(escaped))
 
 	result, execErr := c.runner.Exec(ctx, command)
 	if execErr != nil {
@@ -56,7 +59,7 @@ MOTDEOF`, motd)
 }
 
 func (c *Customizer) createUser(ctx context.Context, username string) error {
-	command := fmt.Sprintf("useradd -m -G wheel %s", username)
+	command := fmt.Sprintf("useradd -m -G wheel %s", ssh.EscapeShellArg(username))
 
 	result, execErr := c.runner.Exec(ctx, command)
 	if execErr != nil {

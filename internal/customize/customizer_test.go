@@ -56,8 +56,8 @@ func TestInstallPackages(t *testing.T) {
 		runner := &mockRunner{
 			err: nil,
 			results: map[string]ssh.CommandResult{
-				"pkg_add -v nmap":    successResult(),
-				"pkg_add -v tcpdump": successResult(),
+				"pkg_add -v 'nmap'":    successResult(),
+				"pkg_add -v 'tcpdump'": successResult(),
 			},
 			commands: nil,
 		}
@@ -67,8 +67,8 @@ func TestInstallPackages(t *testing.T) {
 
 		require.NoError(t, installErr)
 		assert.Len(t, runner.commands, 2)
-		assert.Equal(t, "pkg_add -v nmap", runner.commands[0])
-		assert.Equal(t, "pkg_add -v tcpdump", runner.commands[1])
+		assert.Equal(t, "pkg_add -v 'nmap'", runner.commands[0])
+		assert.Equal(t, "pkg_add -v 'tcpdump'", runner.commands[1])
 	})
 
 	t.Run("returns error with package name on failure", func(t *testing.T) {
@@ -77,9 +77,9 @@ func TestInstallPackages(t *testing.T) {
 		runner := &mockRunner{
 			err: nil,
 			results: map[string]ssh.CommandResult{
-				"pkg_add -v nmap":    successResult(),
-				"pkg_add -v badpkg":  failureResult("package not found", 1),
-				"pkg_add -v tcpdump": successResult(),
+				"pkg_add -v 'nmap'":    successResult(),
+				"pkg_add -v 'badpkg'":  failureResult("package not found", 1),
+				"pkg_add -v 'tcpdump'": successResult(),
 			},
 			commands: nil,
 		}
@@ -138,12 +138,12 @@ func TestApplyBrandingCommands(t *testing.T) {
 
 		require.NoError(t, brandingErr)
 		require.Len(t, runner.commands, 3)
-		assert.Contains(t, runner.commands[0], "hostname=blackbsd")
+		assert.Contains(t, runner.commands[0], "hostname='blackbsd'")
 		assert.Contains(t, runner.commands[0], "/etc/rc.conf")
 		assert.Contains(t, runner.commands[1], "Welcome to BlackBSD")
 		assert.Contains(t, runner.commands[1], "/etc/motd")
 		assert.Contains(t, runner.commands[2], "useradd")
-		assert.Contains(t, runner.commands[2], "security")
+		assert.Contains(t, runner.commands[2], "'security'")
 	})
 
 	t.Run("returns error when hostname fails", func(t *testing.T) {
@@ -168,7 +168,7 @@ func TestApplyBrandingUserCreation(t *testing.T) {
 		runner := &mockRunner{
 			err: nil,
 			results: map[string]ssh.CommandResult{
-				"useradd -m -G wheel security": failureResult("user already exists", 9),
+				"useradd -m -G wheel 'security'": failureResult("user already exists", 9),
 			},
 			commands: nil,
 		}
@@ -185,7 +185,7 @@ func TestApplyBrandingUserCreation(t *testing.T) {
 		runner := &mockRunner{
 			err: nil,
 			results: map[string]ssh.CommandResult{
-				"useradd -m -G wheel security": failureResult("permission denied", 1),
+				"useradd -m -G wheel 'security'": failureResult("permission denied", 1),
 			},
 			commands: nil,
 		}

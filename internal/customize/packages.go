@@ -5,12 +5,14 @@ import (
 	"context"
 	"fmt"
 	"strings"
+
+	"github.com/omarluq/hetzner-blackbsd/internal/ssh"
 )
 
 // InstallPackages installs each package individually via pkg_add for error isolation.
 func (c *Customizer) InstallPackages(ctx context.Context, packages []string) error {
 	for _, packageName := range packages {
-		command := fmt.Sprintf("pkg_add -v %s", packageName)
+		command := fmt.Sprintf("pkg_add -v %s", ssh.EscapeShellArg(packageName))
 
 		result, execErr := c.runner.Exec(ctx, command)
 		if execErr != nil {

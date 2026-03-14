@@ -5,7 +5,7 @@ go 1.26
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/cenkalti/backoff/v5 v5.0.3
-	github.com/charmbracelet/fang v0.4.4
+	github.com/charmbracelet/fang/v2 v2.0.1
 	github.com/hetznercloud/hcloud-go/v2 v2.36.0
 	github.com/pkg/sftp v1.13.10
 	github.com/rs/zerolog v1.34.0
